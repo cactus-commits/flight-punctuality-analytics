@@ -20,6 +20,7 @@ Kontrollera din egen e-post med `git config user.email`. Lägg **inte** till dig
 | Lisa Yllander | lisaylander92@gmail.com |
 | Alexandra Kaktus | aurabyte.dev@gmail.com |
 | Rickard Garnau | rickardgarnau@gmail.com |
+| Filippa Jansson | filippa762@gmail.com |
 
 Kopiera de rader du behöver:
 
@@ -28,7 +29,7 @@ Co-authored-by: Miranda Lyng <lyngmiranda@gmail.com>
 Co-authored-by: Lisa Yllander <lisaylander92@gmail.com>
 Co-authored-by: Alexandra Kaktus <aurabyte.dev@gmail.com>
 Co-authored-by: Rickard Garnau <rickardgarnau@gmail.com>
-Co-authored-by: Filippa <>
+Co-authored-by: Filippa <filippa762@gmail.com>
 ```
 
 Färdigt kommando (kort):

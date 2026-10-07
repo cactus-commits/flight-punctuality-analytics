@@ -1,85 +1,3 @@
-# Git Workflow (Branching & Pull Requests)
-
-För att säkerställa ett strukturerat arbete i projektet använder vi **feature branches** från `main`.
-All ny funktionalitet utvecklas i en egen branch och mergas till `main` via Pull Requests.
-Vi använder Git för versionshantering och GitHub för repository, Pull Requests och kodgranskning.
-
----
-
-## Snabbåtkomst
-
-> Det du oftast behöver, samlat högst upp. Resten av dokumentet finns i [innehållsförteckningen](#innehåll).
-
-### Co-authors (pair och mob programming)
-
-Kontrollera din egen e-post med `git config user.email`. Lägg **inte** till dig själv som co-author, bara de andra du jobbat med.
-
-| Namn | E-post |
-|---|---|
-| Miranda Lyng | lyngmiranda@gmail.com |
-| Lisa Yllander | lisaylander92@gmail.com |
-| Alexandra Kaktus | aurabyte.dev@gmail.com |
-| Rickard Garnau | rickardgarnau@gmail.com |
-| Filippa Jansson | filippa762@gmail.com |
-
-Kopiera de rader du behöver:
-
-```text
-Co-authored-by: Miranda Lyng <lyngmiranda@gmail.com>
-Co-authored-by: Lisa Yllander <lisaylander92@gmail.com>
-Co-authored-by: Alexandra Kaktus <aurabyte.dev@gmail.com>
-Co-authored-by: Rickard Garnau <rickardgarnau@gmail.com>
-Co-authored-by: Filippa <filippa762@gmail.com>
-```
-
-Färdigt kommando (kort):
-
-```bash
-git commit -m "feat: add track ingest" -m "Co-authored-by: Miranda Lyng <lyngmiranda@gmail.com>"
-```
-
-Färdigt kommando (med beskrivning och flera co-authors):
-
-```bash
-git commit -m "feat: add login with email and password
-
-Short description of what and why.
-
-Co-authored-by: Lisa Yllander <lisaylander92@gmail.com>
-Co-authored-by: Alexandra Kaktus <aurabyte.dev@gmail.com>"
-```
-
-Mer om formatet: [Pair och mob programming](#pair-och-mob-programming).
-
-### Commit-prefix
-
-| Prefix | Användning |
-|---|---|
-| `chore` | Set up / konfiguration |
-| `feat` | Ny funktionalitet |
-| `fix` | Buggfix |
-| `docs` | Dokumentation |
-| `refactor` | Kodomstrukturering |
-| `test` | Tester |
-
-Exempel: `feat: add weather data filtering`, `fix: resolve csv parsing error`, `docs: update README installation guide`.
-Fler regler: [Commit guidelines](#commit-guidelines).
-
-### Vanligaste kommandon
-
-```bash
-git status                                   # vilken branch, vilka filer?
-git switch <branch>                          # byt branch
-git checkout -b feat/<namn>                  # skapa ny branch
-git add .                                    # stage:a alla ändringar
-git commit -m "feat: beskrivning"            # commit
-git push origin <branch>                     # pusha
-git push --set-upstream origin <branch>      # första pushen av en ny branch
-git pull origin main                         # hämta senaste main
-```
-
----
-
 ## Innehåll
 
 1. [Snabbåtkomst](#snabbåtkomst)
@@ -100,6 +18,84 @@ git pull origin main                         # hämta senaste main
 6. [Commit guidelines](#commit-guidelines)
 7. [Innan du loggar ut](#innan-du-loggar-ut)
 8. [Säkerhetsregel](#säkerhetsregel)
+
+---
+
+# Git Workflow (Branching & Pull Requests)
+
+För att säkerställa ett strukturerat arbete i projektet använder vi **feature branches** från `main`.
+All ny funktionalitet utvecklas i en egen branch och mergas till `main` via Pull Requests.
+Vi använder Git för versionshantering och GitHub för repository, Pull Requests och kodgranskning.
+
+---
+
+## Snabbåtkomst
+
+> Det du oftast behöver, samlat högst upp. Resten av dokumentet finns i [innehållsförteckningen](#innehåll).
+
+### Co-authors (pair och mob programming)
+
+Kontrollera din egen e-post med `git config user.email`. Lägg **inte** till dig själv som co-author, bara de andra du jobbat med.
+
+| Namn             | E-post                  |
+| ---------------- | ----------------------- |
+| Miranda Lyng     | lyngmiranda@gmail.com   |
+| Lisa Yllander    | lisaylander92@gmail.com |
+| Alexandra Kaktus | aurabyte.dev@gmail.com  |
+| Rickard Garnau   | rickardgarnau@gmail.com |
+| Filippa Jansson  | filippa762@gmail.com |
+
+Kopiera de rader du behöver:
+
+```text
+Co-authored-by: Miranda Lyng <lyngmiranda@gmail.com>
+Co-authored-by: Lisa Yllander <lisaylander92@gmail.com>
+Co-authored-by: Alexandra Kaktus <aurabyte.dev@gmail.com>
+Co-authored-by: Rickard Garnau <rickardgarnau@gmail.com>
+Co-authored-by: Filippa Jansson <filippa762@gmail.com>
+```
+
+Färdigt kommando (kort - för en co-authors):
+
+```bash
+git commit -m "feat: add track ingest" -m "Co-authored-by: Miranda Lyng <lyngmiranda@gmail.com>"
+```
+
+Färdigt kommando (med beskrivning och flera co-authors):
+
+```bash
+git commit -m "chore: add folder structure and update daily_log" -m "Co-authored-by: Miranda Lyng <lyngmiranda@gmail.com>
+Co-authored-by: Rickard Garnau <rickardgarnau@gmail.com>"
+```
+
+Mer om formatet: [Pair och mob programming](#pair-och-mob-programming).
+
+### Commit-prefix
+
+| Prefix     | Användning             |
+| ---------- | ---------------------- |
+| `chore`    | Set up / konfiguration |
+| `feat`     | Ny funktionalitet      |
+| `fix`      | Buggfix                |
+| `docs`     | Dokumentation          |
+| `refactor` | Kodomstrukturering     |
+| `test`     | Tester                 |
+
+Exempel: `feat: add weather data filtering`, `fix: resolve csv parsing error`, `docs: update README installation guide`.
+Fler regler: [Commit guidelines](#commit-guidelines).
+
+### Vanligaste kommandon
+
+```bash
+git status                                   # vilken branch, vilka filer?
+git switch <branch>                          # byt branch
+git checkout -b feat/<namn>                  # skapa ny branch
+git add .                                    # stage:a alla ändringar
+git commit -m "feat: beskrivning"            # commit
+git push origin <branch>                     # pusha
+git push --set-upstream origin <branch>      # första pushen av en ny branch
+git pull origin main                         # hämta senaste main
+```
 
 ---
 
@@ -343,14 +339,14 @@ git branch -u origin/feature/branch_name
 
 Vi använder följande commit-prefix:
 
-| Prefix | Användning |
-|---|---|
-| `chore` | Set up / konfiguration |
-| `feat` | Ny funktionalitet |
-| `fix` | Buggfix |
-| `docs` | Dokumentation |
-| `refactor` | Kodomstrukturering |
-| `test` | Tester |
+| Prefix     | Användning             |
+| ---------- | ---------------------- |
+| `chore`    | Set up / konfiguration |
+| `feat`     | Ny funktionalitet      |
+| `fix`      | Buggfix                |
+| `docs`     | Dokumentation          |
+| `refactor` | Kodomstrukturering     |
+| `test`     | Tester                 |
 
 ## Commit guidelines
 

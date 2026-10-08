@@ -1,0 +1,18 @@
+[project]
+name = "flight-punctuality-analytics"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dagster>=1.13.25",
+    "dagster-dbt>=0.29.25",
+    "dagster-dlt>=0.29.25",
+    "dagster-webserver>=1.13.25",
+    "dbt-core>=1.12.5",
+    "dbt-snowflake>=1.12.1",
+    "dlt[parquet,snowflake]>=1.31.0",
+    "ipykernel>=7.4.0",
+    "pandas>=3.0.6",
+    "streamlit>=1.65.0",
+]

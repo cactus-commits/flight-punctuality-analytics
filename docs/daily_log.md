@@ -228,6 +228,10 @@ TO DO :
 Medverkande: Miranda, Lisa och Rickard
 Beskrivning: Sett över och fixat i samtliga modeller (src, dom, fct) samt skapat två marts - en för arrivals och en för departures.
 Stötte på en del problem iom dbt testing där vissa hade dubletter på id - därav vissa ändringar. Kört 'dbt build' och nu funkar det.
+Sen korrigering:
+- mart_arrivals_info: la till Deleted-filtret som redan fanns i mart_departures_info
+- fct_arrivals: qualify väljer nu raden som inte är Deleted först, så att flygningar inte försvinner när två versioner finns
+- dim_airline: rättat coalesce/max så att 18 flygbolag inte längre får ICAO "Missing"
 Information:
 - uppdaterat och ändrat lite i dimensional model 
 - schema.yml - dbt testing

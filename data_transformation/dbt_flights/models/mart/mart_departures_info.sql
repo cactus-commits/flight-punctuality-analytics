@@ -13,7 +13,7 @@ select
     fd.scheduled_departure_utc,
     fd.actual_departure_utc,
     datediff('minute', fd.scheduled_departure_utc, fd.actual_departure_utc) as delay_minutes,
-    coalesce(delay_minutes >= 15, false) as is_delayed
+    delay_minutes >= 15 as is_delayed -- null if not landed yet, so averages only count landed flights
 from fct_departures fd
 left join dim_date d on fd.date_id = d.date_id
 left join dim_airline al on fd.airline_id = al.airline_id

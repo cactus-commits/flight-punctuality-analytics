@@ -22,13 +22,13 @@ from src_arrivals
 -- keep only one row per unique flight
 qualify row_number() over ( 
     -- if these row has the exact same information 
-    -- - they hashes as one row, to avoid dupicates
+    -- - they hashes as one row, to avoid duplicates
     partition by
         flight_number,
         flight_departure_date_utc,
         departure_airport_iata,
         arrival_airport_iata
-    order by data_fetched_date desc, actual_arrival_utc desc nulls last
-) = 1 -- keeps the first row in each group
+    order by case when flight_status = 'Deleted' then 1 else 0 end, -- real row before Deleted copy, regardless of fetch order
+    data_fetched_date desc, actual_arrival_utc desc nulls last) = 1 -- keeps the first row in each group
 
 

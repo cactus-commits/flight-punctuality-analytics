@@ -277,3 +277,26 @@ Information:
 ```
 --- 
 
+## 18/10 "Streamlit-dashboard"
+
+### Medverkande: Alexandra
+
+**Beskrivning:**
+
+Första versionen av dashboarden är klar. Den läser från `mart_arrivals_info` och `mart_departures_info` i Snowflake.
+
+- Sammanfattning överst: en ruta för arrivals och en för departures. Antal förseningar står först (t.ex. 118 delays), under det andel försenade, antal flyg och antal inställda
+- Delays by date: ett diagram per riktning. Staplarna visar försenade (orange, underst) och i tid (grå). Procenten ovanför varje stapel är andelen försenade den dagen
+  - Dagar som inte är klara (mer än 5 % av de icke-inställda flygen saknar faktisk tid) är bleka och märkta "(partial)". Just nu gäller det 16/10, som är dagen vi hämtade datan
+  - Båda diagrammen har samma y-axel så att de går att jämföra
+- Delays by airline and airport: rankning per flygplats (först) och flygbolag. Standard är andel försenade, eftersom antal bara visar vilka som flyger mest (SAS och Norwegian hamnar alltid högst)
+  - Streckad linje = genomsnittlig andel försenade för alla flyg i filtret. Staplar till höger om linjen är sämre än normalt
+  - Flygplatser och flygbolag med färre än 5 mätta flyg per riktning visas inte i andelsrankningen
+
+
+**Information:**
+
+- Fil: `streamlit_app/app.py`, kör `uv run streamlit run streamlit_app/app.py` från repots rot
+- Lösenord: kopiera `.streamlit/secrets.toml.example` till `.streamlit/secrets.toml` och fyll i (ignoreras av git)
+- Datan täcker bara tre dagar, så datumdiagrammet har få staplar. 13/10 har få flyg eftersom hämtningen började mitt på dagen, men räknas inte som partial eftersom nästan alla flyg har faktisk tid
+

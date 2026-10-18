@@ -42,6 +42,7 @@ def load_flights() -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"])
     df["delay_minutes"] = pd.to_numeric(df["delay_minutes"])
     df["is_delayed"] = df["is_delayed"].astype("boolean")  # null = not landed/departed yet
+    df["airport"] = df["airport"].str.replace(r"\s+Airport$", "", regex=True)  # shorter chart labels
     df["cancelled"] = df["flight_status"] == "Cancelled"
     return df
 
@@ -64,7 +65,15 @@ def summarize(df: pd.DataFrame, by: list[str]) -> pd.DataFrame:
     return out
 
 
-AXIS_TITLES = {"pct_delayed": "Share delayed (% of flights)", "delayed": "Delayed flights (number)"}
+# neutral blues so neither direction draws attention like red/orange would
+DIRECTION_COLORS = alt.Scale(domain=["Arrival", "Departure"], range=["#2f6f8f", "#9db8c8"])
+
+# delayed vs on time (date chart only); direction colours are used by the ranking charts
+STATUS_COLORS = alt.Scale(domain=["Delayed", "On time"], range=["#E4572E", "#BFC5CC"])
+PARTIAL_DAY_SHARE = 0.05  # a day is partial if more than 5% of its non-cancelled flights have no actual time yet
+COUNT_AXIS = alt.Axis(tickMinStep=1, format="d")  # whole numbers for flight counts
+
+AXIS_TITLES = {"pct_delayed": "Share delayed (%)", "delayed": "Delayed flights"}
 
 HELP_DELAYED = f"Number of flights that were {DELAY_THRESHOLD_MIN} minutes or more later than scheduled."
 HELP_SHARE = (
@@ -73,18 +82,79 @@ HELP_SHARE = (
 )
 
 
-def ranking_chart(data: pd.DataFrame, category: str, metric: str, title: str):
-    return (
+def date_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Per direction and date: delayed / on-time counts and whether the day is still incomplete."""
+    stats = summarize(df, ["direction", "date"])
+    non_cancelled = stats["flights"] - stats["cancelled"]
+    no_actual = non_cancelled - stats["measured"]
+    stats["partial"] = (no_actual / non_cancelled).where(non_cancelled > 0, 0) > PARTIAL_DAY_SHARE
+    stats["on_time"] = stats["measured"] - stats["delayed"]
+    stats["label"] = [
+        f"{d:%a} {d.day} {d:%b}" + (" (partial)" if p else "") for d, p in zip(stats["date"], stats["partial"])
+    ]
+    return stats.sort_values("date")
+
+
+def date_chart(stats: pd.DataFrame, y_max: float):
+    """Stacked bars for one direction: delayed at the bottom, on time on top, share delayed above each bar."""
+    long = stats.melt(
+        id_vars=["label", "date", "measured", "pct_delayed", "partial"],
+        value_vars=["delayed", "on_time"],
+        var_name="status",
+        value_name="count",
+    )
+    long["status"] = long["status"].map({"delayed": "Delayed", "on_time": "On time"})
+    long["stack_order"] = long["status"].map({"Delayed": 0, "On time": 1})  # lowest is stacked first (bottom)
+    x = alt.X("label:O", sort=stats["label"].tolist(), title=None, axis=alt.Axis(labelAngle=0))
+    y_scale = alt.Scale(domain=[0, y_max])
+    bars = (
+        alt.Chart(long)
+        .mark_bar()
+        .encode(
+            x=x,
+            y=alt.Y("count:Q", title="Flights", scale=y_scale, axis=COUNT_AXIS),
+            color=alt.Color("status:N", scale=STATUS_COLORS, legend=None),
+            order=alt.Order("stack_order:Q"),
+            opacity=alt.condition(alt.datum.partial, alt.value(0.45), alt.value(1)),
+            tooltip=[
+                alt.Tooltip("label:O", title="Date"),
+                alt.Tooltip("status:N", title="Status"),
+                alt.Tooltip("count:Q", title="Flights"),
+                alt.Tooltip("measured:Q", title="Flights measured"),
+                alt.Tooltip("pct_delayed:Q", title="Share delayed (%)", format=".1f"),
+            ],
+        )
+    )
+    labels = (
+        alt.Chart(stats[stats["measured"] > 0].assign(text=lambda d: d["pct_delayed"].round().astype(int).astype(str) + "%"))
+        .mark_text(baseline="bottom", dy=-3, color="#374151")
+        .encode(x=x, y=alt.Y("measured:Q", scale=y_scale), text="text:N")
+    )
+    return bars + labels
+
+
+def ranking_chart(data: pd.DataFrame, category: str, metric: str, title: str, average: float | None = None):
+    bars = (
         alt.Chart(data, title=title)
         .mark_bar()
         .encode(
-            x=alt.X(metric, title=AXIS_TITLES[metric]),
-            y=alt.Y(category, sort="-x", title=None),
-            color=alt.Color("direction", title="Direction"),
+            x=alt.X(metric, title=AXIS_TITLES[metric], axis=COUNT_AXIS if metric == "delayed" else alt.Axis()),
+            y=alt.Y(category, sort="-x", title=None, axis=alt.Axis(labelLimit=250)),
+            color=alt.Color("direction", scale=DIRECTION_COLORS, legend=None),
             yOffset="direction",
             tooltip=[category, "direction", "flights", "delayed", alt.Tooltip("pct_delayed", format=".1f")],
         )
     )
+    if average is None:
+        return bars
+    ref = pd.DataFrame({"average": [average], "label": [f"Average {average:.1f}%"]})
+    rule = alt.Chart(ref).mark_rule(color="#374151", strokeDash=[5, 4], size=2).encode(x="average:Q")
+    text = (
+        alt.Chart(ref)
+        .mark_text(align="left", dx=4, dy=-4, baseline="bottom", color="#374151", fontWeight="bold")
+        .encode(x="average:Q", y=alt.value(0), text="label")
+    )
+    return bars + rule + text
 
 
 try:
@@ -130,32 +200,32 @@ for col, direction in zip(kpi_cols, directions):
     icon = "🛬" if direction == "Arrival" else "🛫"
     d = df[df["direction"] == direction]
     with col.container(border=True):
-        st.markdown(f"### {icon} {direction}s")
         if d.empty:
-            st.write("No flights match the filters.")
+            st.write(f"{icon} {direction}s: no flights match the filters.")
             continue
         t = summarize(d.assign(all="all"), ["all"]).iloc[0]
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Flights", f"{int(t.flights):,}")
-        m2.metric("Delayed", f"{int(t.delayed):,}", help=HELP_DELAYED)
-        m3.metric("Share delayed", "–" if pd.isna(t.pct_delayed) else f"{t.pct_delayed:.1f}%", help=HELP_SHARE)
-        m4.metric("Cancelled", f"{int(t.cancelled):,}", help="Flights with status Cancelled.")
+        share = "–" if pd.isna(t.pct_delayed) else f"{t.pct_delayed:.1f}%"
+        st.metric(
+            f"{icon} {direction}s",
+            f"{int(t.delayed):,} {'delay' if t.delayed == 1 else 'delays'}",
+            help=f"{HELP_DELAYED}\n\nShare delayed: {HELP_SHARE}",
+        )
+        st.write(f"{share} of {int(t.flights):,} flights · {int(t.cancelled):,} cancelled (not included in share)")
 
-# ---- By date
+# ---- By date: one chart per direction, delayed vs on time
 st.subheader("Delays by date")
-by_date = summarize(df, ["date", "direction"])
-st.altair_chart(
-    alt.Chart(by_date)
-    .mark_bar()
-    .encode(
-        x=alt.X("date:T", title=None, timeUnit="yearmonthdate"),
-        y=alt.Y("delayed:Q", title=AXIS_TITLES["delayed"]),
-        color=alt.Color("direction", title="Direction"),
-        xOffset="direction",
-        tooltip=["date", "direction", "flights", "delayed", alt.Tooltip("pct_delayed", format=".1f")],
-    ),
-    width="stretch",
+st.markdown(
+    '<small><span style="color:#E4572E;font-size:1.2em">●</span> Delayed (15+ min late) &nbsp;&nbsp;'
+    '<span style="color:#BFC5CC;font-size:1.2em">●</span> On time (less than 15 min late) &nbsp;&nbsp;'
+    "Labels show the share delayed. Faded bars are days that are not finished yet.</small>",
+    unsafe_allow_html=True,
 )
+stats = date_stats(df)
+y_max = stats["measured"].max() * 1.12  # same scale in both charts, headroom for the share label
+for col, direction in zip(st.columns(len(directions)), directions):
+    with col:
+        st.markdown(f"**{direction}s**")
+        st.altair_chart(date_chart(stats[stats["direction"] == direction], y_max), width="stretch")
 
 # ---- By airline / airport
 st.subheader("Delays by airline and airport")
@@ -170,10 +240,20 @@ top_n = st.slider("Show top", 5, 30, 10)
 if metric == "delayed":
     st.caption("Counts favour the airlines and airports with the most flights. Use share delayed to compare punctuality.")
 else:
-    st.caption(f"Only airlines and airports with at least {MIN_FLIGHTS_IN_RANKING} measured flights per direction are shown.")
+    st.caption(
+        f"Only airlines and airports with at least {MIN_FLIGHTS_IN_RANKING} measured flights per direction are shown. "
+        "The dashed line is the average share delayed for all flights in the current filter: bars to its right are worse than normal."
+    )
 
-left, right = st.columns(2)
-for col, field, label in ((left, "airline_name", "airline"), (right, "airport", "airport")):
+legend_html = "".join(
+    f'<span style="color:{color};font-size:1.2em">●</span> {name} &nbsp;&nbsp;'
+    for name, color in zip(DIRECTION_COLORS.domain, DIRECTION_COLORS.range)
+)
+st.markdown(f"<small>Chart colours: {legend_html}</small>", unsafe_allow_html=True)
+
+overall_pct = summarize(df.assign(all="all"), ["all"]).iloc[0].pct_delayed
+left, right = st.columns([3, 2])  # airports first and wider: the airport authority's main interest
+for col, field, label in ((left, "airport", "airport"), (right, "airline_name", "airline")):
     s = summarize(df, [field, "direction"])
     if metric == "pct_delayed":  # shares from tiny samples are misleading
         s = s[s["measured"] >= MIN_FLIGHTS_IN_RANKING]
@@ -182,7 +262,8 @@ for col, field, label in ((left, "airline_name", "airline"), (right, "airport", 
     total["pct_delayed"] = total["delayed"] / total["measured"] * 100
     order = total[metric].nlargest(top_n).index
     s = s[s[field].isin(order)]
-    col.altair_chart(ranking_chart(s, field, metric, f"By {label}"), width="stretch")
+    average = overall_pct if metric == "pct_delayed" and pd.notna(overall_pct) else None
+    col.altair_chart(ranking_chart(s, field, metric, f"By {label}", average), width="stretch")
 
 with st.expander("Data"):
     st.dataframe(summarize(df, ["airline_name", "airport", "direction"]).sort_values("delayed", ascending=False), width="stretch")

@@ -297,5 +297,4 @@ I dashboarden dök flygplatserna Ronneby och Kiruna upp som "Unknown". Vi har nu
 
 - Filer: data_transformation -> dbt_flights -> seeds/missing_airports.csv, models/dim/dim_airport.sql, dbt_project.yml
 - Utländska flygplatser som saknas (t.ex. AGH, SFT, ZZZ) ligger inte i seeden. De visas fortfarande som 'Unknown' på andra sidan av flyget i marts, men inte i dashboardens flygplatsdiagram, som bara visar den svenska sidan
-- README (Known data limitations) är uppdaterad så att den stämmer med detta
 - Kör `uv run dbt seed` i dbt_flights innan `dbt build` om du har en tom databas

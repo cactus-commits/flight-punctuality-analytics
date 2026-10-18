@@ -277,3 +277,24 @@ Information:
 ```
 --- 
 
+
+## 18/10 "Saknade flygplatser i dim_airport"
+
+### Medverkande: Alexandra
+
+**Beskrivning:**
+
+I dashboarden dök flygplatserna Ronneby och Kiruna upp som "Unknown". Vi har nu lagt till dem.
+
+- Vad som var fel: flygplatsnamnen kommer från Wikipedia-listan (`src_airport`). Ronneby (RNB) och Kiruna (KRN) finns inte i den listan, varken på kod eller namn. Flyg till och från dem hittade därför ingen rad i `dim_airport` och fick 'Unknown' i marts (45 flyg, 33 för RNB och 12 för KRN)
+- Varför det spelar roll: det är Swedavias egna flygplatser och flygplatsdiagrammet är det viktigaste för den som äger dem. Två "Unknown" där ser ut som ett fel
+- Vad vi gjorde: la till en seed, `seeds/missing_airports.csv`, med RNB och KRN (kod, namn, stad) och la in raderna i `dim_airport`. En seed-rad används bara om koden inte redan finns i Wikipedia-listan, så vi får inga dubletter om Wikipedia rättas senare
+- Varför en seed: det är bara två rader, och det syns tydligt i repot vad vi har lagt till för hand. Alternativet var att hämta namnen från Swedavia-datan, men det kräver mer arbete och är inte nödvändigt för en PoC
+- Seeden hamnar i schemat `warehouse` (inställt i `dbt_project.yml`), bredvid dim-tabellerna, där dbt-rollen redan har rättigheter
+- Kört `dbt seed` och `dbt build -s dim_airport+`, alla tester gröna. Efteråt finns inga 'Unknown' kvar på den svenska sidan av flyget i marts
+
+**Information:**
+
+- Filer: data_transformation -> dbt_flights -> seeds/missing_airports.csv, models/dim/dim_airport.sql, dbt_project.yml
+- Utländska flygplatser som saknas (t.ex. AGH, SFT, ZZZ) ligger inte i seeden. De visas fortfarande som 'Unknown' på andra sidan av flyget i marts, men inte i dashboardens flygplatsdiagram, som bara visar den svenska sidan
+- Kör `uv run dbt seed` i dbt_flights innan `dbt build` om du har en tom databas

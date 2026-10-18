@@ -216,7 +216,7 @@ I eda_svedavia.ipynb har funktioner lagst till för att :
 - in folder dbt_flights `uv run dbt deps`
 
 --- 
-16/10 "dim-modeller och marts samt tester i schema.yml"
+### 16/10 "dim-modeller och marts samt tester i schema.yml"
 Medverkande: Miranda, Lisa och Rickard
 Beskrivning: Sett över och fixat i samtliga modeller (src, dom, fct) samt skapat två marts - en för arrivals och en för departures.
 Stötte på en del problem iom dbt testing där vissa hade dubletter på id - därav vissa ändringar. Kört 'dbt build' och nu funkar det.

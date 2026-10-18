@@ -31,3 +31,9 @@ def airline_codes_resource():
 def airport_codes_resource():
     yield _read_tables_with_iata("https://en.wikipedia.org/wiki/List_of_international_airports_by_country")
 
+# Group the two resources into one dlt source.
+# The function name becomes the source name, which is part of the asset keys (for dagster).
+@dlt.source
+def wikipedia_source():
+    # Return both resources so they are loaded together
+    return airline_codes_resource(), airport_codes_resource()

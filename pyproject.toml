@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "dagster>=1.13.25",
     "dagster-dbt>=0.29.25",
+    "dagster-dg-cli>=1.13.25",
     "dagster-dlt>=0.29.25",
     "dagster-webserver>=1.13.25",
     "dbt-core>=1.12.5",
@@ -16,4 +17,28 @@ dependencies = [
     "lxml>=6.1.3",
     "pandas>=3.0.6",
     "streamlit>=1.65.0",
+]
+
+# --- For Dagster ---
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# Tell the build tool which folders are Python packages.
+# The last part of each path becomes the import name.
+packages = [
+    "data_load_extract",
+    "orchestration/src/orchestration",
+]
+# Kept from the scaffold. Delete it if the build complains about the file.
+force-include = { "pyproject.toml" = "pyproject.toml" }
+
+[tool.dg]
+directory_type = "project"
+
+[tool.dg.project]
+root_module = "orchestration"
+registry_modules = [
+    "orchestration.components.*",
 ]

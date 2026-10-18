@@ -251,5 +251,4 @@ Information:
 **Information:**
 
 - Ca 3-8 % av flygen har ett flygbolag eller en flygplats som inte finns i Wikipedia-listorna, så de visas som 'Unknown'. Flygbolag: Swedavia saknar ofta IATA-kod och anger bara ICAO (t.ex. JON, FRO). Flygplatser: små flygplatser och platshållare (t.ex. RNB, KRN, ZZZ). Detta ska nämnas i README och på presentationen
-- Fil: data_transformation -> dbt_flights -> models -> mart
-- Möjlig förbättring (ej gjord, PoC): fallback till ICAO för flygbolag och `relationships`-tester från fct till dim
+

@@ -252,3 +252,28 @@ Information:
 
 - Ca 3-8 % av flygen har ett flygbolag eller en flygplats som inte finns i Wikipedia-listorna, så de visas som 'Unknown'. Flygbolag: Swedavia saknar ofta IATA-kod och anger bara ICAO (t.ex. JON, FRO). Flygplatser: små flygplatser och platshållare (t.ex. RNB, KRN, ZZZ). Detta ska nämnas i README och på presentationen
 
+---
+
+```md
+## ### 18/10 - "Setup Dagster Project, create dlt assets and update sources.yml"
+### Medverkande: Lisa 
+**Beskrivning:**
+- Initierade dagster project med 'uvx create-dagster@latest project my-project' utan uv i mappen
+(källa: https://dagster.io/docs/guides/build/projects/creating-projects)
+- uppdatera pyprojekt.toml för att dagster ska kunna hitta load-filerna utan sys
+- uv add dagster-dg-cli
+- uv sync
+- Lägg till @dlt.source i hämtningen av wikipedia-datan - för dagster assets
+- kolla att kopplingen fungerar: uv run python -c "from orchestration.defs.assets.dlt_assets import swedavia_dlt_assets, wikipedia_dlt_assets; print('ok')"
+- skapa orchstreation/src/orchestration/defs/resources.py för att skapa resurserna
+- testa i dagster ui: uv run dagster dev -m orchestration.definitions
+- hämta namnen "aliasen" från dagster till sources.yml tex. dlt_flights_source_arrivals
+- uppdatera sources.yml med aliasen för dagster 
+
+**Information:** 
+- data_load_extract/get_wikipedia_data.py 
+- data_transformation/dbt_flights/models/src/sources.yml
+- orchestration/src/orchestration/defs/assets/dlt_assets.py
+```
+--- 
+

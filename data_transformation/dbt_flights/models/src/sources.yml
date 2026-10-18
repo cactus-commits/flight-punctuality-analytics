@@ -10,7 +10,14 @@ sources:
     schema: staging
     tables:
       - name: arrivals
+        meta:
+          dagster:
+            asset_key: ["dlt_flights_source_arrivals"]
       - name: departures
+        meta:
+          dagster:
+            asset_key: ["dlt_flights_source_departures"]
+
 
   #############
   ## Wikipedia
@@ -21,5 +28,11 @@ sources:
     tables:
       - name: airlines
         identifier: raw_wikipedia_airlines
+        meta:
+          dagster:
+            asset_key: ["dlt_wikipedia_source_raw_wikipedia_airlines"]
       - name: airports
         identifier: raw_wikipedia_airports
+        meta:
+          dagster:
+            asset_key: ["dlt_wikipedia_source_raw_wikipedia_airports"]

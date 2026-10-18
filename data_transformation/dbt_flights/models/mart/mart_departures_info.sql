@@ -4,10 +4,10 @@ with
     dim_airport as (select * from {{ ref('dim_airport') }}),
     dim_date as (select * from {{ ref('dim_date') }})
 select
-    al.airline_name,
-    al.airline_country,
-    dep.airport_name as departure_airport_name, 
-    arr.airport_name as arrival_airport_name, 
+    coalesce(al.airline_name, 'Unknown') as airline_name,
+    coalesce(al.airline_country, 'Unknown') as airline_country,
+    coalesce(dep.airport_name, 'Unknown') as departure_airport_name, 
+    coalesce(arr.airport_name, 'Unknown') as arrival_airport_name, 
     d.date,
     fd.flight_status,
     fd.scheduled_departure_utc,

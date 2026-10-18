@@ -84,7 +84,6 @@ I eda_svedavia.ipynb har funktioner lagst till för att :
 **Information:**
 
 - Fil: `eda/eda_swedavia.ipynb`, se avsnittet "Delay definition"
-- Kvar att göra: gruppen behöver godkänna 15 min och `flight_date`. Sen ska samma regler in i dbt
 
 ---
 
@@ -216,13 +215,6 @@ I eda_svedavia.ipynb har funktioner lagst till för att :
 
 - in folder dbt_flights `uv run dbt deps`
 
-TO DO :
-- clean up aiport and airline dim duplicates in iata codes
-- dim date
-- joins to create marts
-- add departure_airport_name / arrival_airport_name to src and fct
-- check if nulls in dim_airline
-
 --- 
 16/10 "dim-modeller och marts samt tester i schema.yml"
 Medverkande: Miranda, Lisa och Rickard
@@ -238,3 +230,26 @@ Information:
 - models (kolla igenom alla)
 - snowflake under warehouse
 
+---
+
+## 18/10 "Kontroll av dbt-to-dos och 'Unknown' i marts"
+
+### Medverkande: Alexandra
+
+**Beskrivning:**
+
+- Gått igenom to do-listan från 15/10 och tagit bort den, eftersom allt på den är gjort:
+  - IATA-dubletter i dim_airline och dim_airport är borta (en rad per IATA-kod)
+  - dim_date finns och alla rader i fct matchar ett datum
+  - marts joinar fct med dim_date, dim_airline och dim_airport
+  - departure_airport_name / arrival_airport_name finns i båda marts
+  - inga NULL i dim_airline (saknade värden är texten 'Missing')
+- Tog bort kommentarer i src_airport som beskrev rensning som modellen inte gör (rensningen sker i dim-modellerna)
+- Ändrade mart_arrivals_info och mart_departures_info: airline_name, airline_country, departure_airport_name och arrival_airport_name är nu 'Unknown' i stället för NULL när flyget inte matchar någon rad i dim-tabellerna. Då visas inga tomma grupper i dashboarden
+- `dbt test` (10 tester) och `dbt run` på båda marts är gröna
+
+**Information:**
+
+- Ca 3-8 % av flygen har ett flygbolag eller en flygplats som inte finns i Wikipedia-listorna, så de visas som 'Unknown'. Flygbolag: Swedavia saknar ofta IATA-kod och anger bara ICAO (t.ex. JON, FRO). Flygplatser: små flygplatser och platshållare (t.ex. RNB, KRN, ZZZ). Detta ska nämnas i README och på presentationen
+- Fil: data_transformation -> dbt_flights -> models -> mart
+- Möjlig förbättring (ej gjord, PoC): fallback till ICAO för flygbolag och `relationships`-tester från fct till dim

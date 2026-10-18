@@ -39,6 +39,7 @@ directory_type = "project"
 
 [tool.dg.project]
 root_module = "orchestration"
+code_location_name = "orchestration.definitions"
 registry_modules = [
     "orchestration.components.*",
 ]

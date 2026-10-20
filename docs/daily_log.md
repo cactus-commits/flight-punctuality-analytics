@@ -336,3 +336,33 @@ I dashboarden dök flygplatserna Ronneby och Kiruna upp som "Unknown". Vi har nu
 
 **Todo**
 - Sätta upp Azure
+
+---
+
+## 20/10 "Deploy till Azure och städning av README"
+
+### Medverkande: Rickard, Filippa, Miranda, Lisa
+
+**Beskrivning:**
+
+- Uppdaterat `README.md` så att den stämmer med koden: projektstruktur, Snowflake-roller, Dagster-kommandot, beskrivning av src/fct/mart och Azure-stegen. Lagt till kända begränsningar (Unknown-flyg och UTC-datum)
+- Tagit bort den gamla `secrets.toml`-instruktionen, eftersom appen nu läser `.env`
+- Undersökt datumet i `fct_arrivals`: `date_id` tas från UTC-tiden, så 135 ankomster mellan 00:00 och 02:00 svensk tid hamnar på dagen innan. Inte fixat, dokumenterat under Known limitations i README
+- Forkat repot till eget konto för egen deploy. Gruppens repo ligger som `upstream` med push avstängd (`no_push`), så att inget hamnar där av misstag
+- Lagt till `image: ${ACR_LOGIN_SERVER}/...` för `dwh_pipeline` och `dashboard` i `docker-compose.yml`, så att alla kan pusha till sitt eget ACR med samma fil
+- Skapat ett Azure Container Registr med Admin user påslaget, byggt båda images och pushat dem dit
+- Skapat en Container App för Dagster (2 CPU, 4 Gi, ingress på port 3000) med miljövariablerna från `.env`. Testat i Azure: `job_dlt` kördes manuellt och `dlt_success_sensor` startade `job_dbt` automatiskt, båda Success
+- Skapat en Web App för Streamlit (Basic B1) med `WEBSITES_PORT=8501`, Streamlit-portarna och Snowflake-variablerna. Dashboarden visar data från Snowflake
+
+**Information:**
+
+- `.env` måste ha två understreck i alla namn: `DESTINATION__SNOWFLAKE__CREDENTIALS__...`. `profiles.yml` och `app.py` läser nu också dessa
+- `app.py` läser schemat från `DASHBOARD_SCHEMA` (värde `mart`), som måste finnas i `.env` och i Web App
+- Dagster-UI:t uppdateras inte alltid av sig självt. Ser en körning ut att hänga, ladda om sidan
+
+**Todo:**
+
+- Byta `DESTINATIONSNOWFLAKESCHEMA=` mot `DASHBOARD_SCHEMA=` i `.env.example`
+- Bestämma om `date_id` ska fixas med `convert_timezone` eller stå kvar som begränsning
+- Stoppa Container App när den inte används, för att spara kredit
+- Presentation (#60) och individuell video (#61)

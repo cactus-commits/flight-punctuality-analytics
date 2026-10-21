@@ -32,7 +32,17 @@ st.set_page_config(page_title="Flight punctuality",
                    page_icon="✈️", layout="wide")
 
 
-@st.cache_resource
+def _connection_is_alive(conn) -> bool:
+    # Snowflake session tokens expire after a while, so a cached connection can go stale.
+    # A cheap query tells us; if it fails, Streamlit drops the connection and reconnects.
+    try:
+        conn.cursor().execute("select 1").close()
+        return True
+    except snowflake.connector.Error:
+        return False
+
+
+@st.cache_resource(validate=_connection_is_alive)
 def get_connection():
     # Creates one Snowflake connection and reuses it across app reruns.
     # secrets from environment variables, the rest is not secret (same setup as profiles.yml)
@@ -44,6 +54,7 @@ def get_connection():
         warehouse=os.getenv("DESTINATION__SNOWFLAKE__CREDENTIALS__WAREHOUSE"),
         database=os.getenv("DESTINATION__SNOWFLAKE__CREDENTIALS__DATABASE"),
         schema=os.getenv("DASHBOARD_SCHEMA"),
+        client_session_keep_alive=True,  # keeps the session token fresh while the app is open
     )
 
 

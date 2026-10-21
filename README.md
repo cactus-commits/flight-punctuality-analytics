@@ -226,34 +226,114 @@ dbt build
 
 Dagster and Streamlit are containerised separately and deployed to an Azure student account.
 
-| Component | Azure resource |
-|-----------|----------------|
-| Dagster | Azure **Container App** |
-| Streamlit | Azure **Web App** |
+| Component | Image | Port | Azure resource |
+|-----------|-------|------|----------------|
+| Dagster (dlt + dbt) | `dwh_pipeline` | 3000 | **Container App** |
+| Streamlit | `dashboard` | 8501 | **Web App** |
 
-### Push images to Azure Container Registry
+The flow is: **test locally → push images to Azure Container Registry (ACR) → create the Container App and the Web App → set environment variables in Azure.**
+
+> `.env` is **not** copied into the images (it is in `.dockerignore`), so Azure cannot read it. Every variable the containers need must be added manually as an environment variable in Azure. A *secret* alone is not enough: you must also create an environment variable that references it.
+
+### 9.1 Before you deploy
+
+Use the same resource group and region (e.g. Sweden Central) for all resources. The local setup in [5.3](#53-clone-the-repository-and-configure) and [5.4](#54-start-the-stack) must work first: if `docker compose up --build` runs and both UIs load locally, the images are ready to push.
+
+### 9.2 Push images to Azure Container Registry
 
 Create a container registry and enable **Admin user** under *Settings → Access keys*. The login server, username and password are shown on the same page.
 
 ```bash
-# Build both images
-docker compose build
+# Build both images 
+docker compose build <imagename>
 
 # Log in with the username and password from Access keys
 docker login <registry-name>.azurecr.io
 
-# Tag and push
-docker tag flight-punctuality-analytics-dwh_pipeline <registry-name>.azurecr.io/dwh_pipeline:latest
+# Push images to Azure 
 docker push <registry-name>.azurecr.io/dwh_pipeline:latest
-
-docker tag flight-punctuality-analytics-dashboard <registry-name>.azurecr.io/dashboard:latest
 docker push <registry-name>.azurecr.io/dashboard:latest
+
 ```
 
-Then create the Container App and the Web App from the images in the registry. `.env` is not part of the images, so the variables in [`.env.example`](.env.example) are set as environment variables in Azure:
+Check in the portal under **Container registry → Repositories** that both `dwh_pipeline` and `dashboard` exist with the tag `latest`.
 
-- **Container App (Dagster):** ingress on, target port `3000`
-- **Web App (Streamlit):** `WEBSITES_PORT=8501`
+### 9.3 Container App (Dagster)
+
+In the Azure portal: **Container Apps → Create**.
+
+| Tab | Setting |
+|-----|---------|
+| Basics | Same resource group, a name (e.g. `dagster-container-app`), region Sweden Central |
+| Container | **If needed**: Untick *Use quickstart image*. Source: **Azure Container Registry**, image `dwh_pipeline`, tag `latest` |
+| Container | Start with **2 CPU / 4 Gi** memory. Too little memory makes the container crash |
+| Ingress | Enable ingress, accept traffic **from anywhere**, **target port `3000`** |
+
+**Environment variables** (*Application → Containers → Edit and deploy → Environment variables*): add every variable from [`.env.example`](.env.example), with exactly the same names (double underscores and upper case matter). dbt and dlt need at least:
+
+| Name | Value |
+|------|-------|
+| `DESTINATION__SNOWFLAKE__CREDENTIALS__USERNAME` | Snowflake user |
+| `DESTINATION__SNOWFLAKE__CREDENTIALS__PASSWORD` | Password (preferably *Reference a secret*) |
+| `DESTINATION__SNOWFLAKE__CREDENTIALS__HOST` | Snowflake account identifier |
+| `DESTINATION__SNOWFLAKE__CREDENTIALS__DATABASE` | `swedavia_db` |
+| `DESTINATION__SNOWFLAKE__CREDENTIALS__WAREHOUSE` | `swedavia_wh` |
+| `DESTINATION__SNOWFLAKE__CREDENTIALS__ROLE` | Role used by the pipeline |
+| *(the rest of `.env.example`)* | e.g. the Swedavia API key |
+
+
+### 9.4 Web App (Streamlit)
+
+In the Azure portal: **App Services → Create → Web App**.
+
+| Tab | Setting |
+|-----|---------|
+| Basics | Same resource group, a name, **Publish: Container**, **OS: Linux**, region Sweden Central |
+| Database | None |
+| Container | Untick *Sidecar*. Source: **Azure Container Registry**, image `dashboard`, tag `latest` |
+| Networking | Public access: On |
+
+**Environment variables** (*Settings → Environment variables → App settings*):
+
+| Name | Value | Why |
+|------|-------|-----|
+| `WEBSITES_PORT` | `8501` | Azure probes port 80 by default |
+| `STREAMLIT_SERVER_ADDRESS` | `0.0.0.0` | Streamlit must listen externally |
+| `STREAMLIT_SERVER_PORT` | `8501` | |
+| `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER_TRANSFORMER_PASSWORD` and the other `_SNOWFLAKE_*` variables the app reads (database, schema, role, warehouse) | from `.env` | Streamlit connects to Snowflake with these |
+
+Click **Apply**, then **Restart** the Web App.
+
+### 9.5 Verify
+
+- **Container App:** open the *Application Url*. The Dagster UI should load. Materialize the assets to confirm that dlt and dbt run from Azure.
+- **Web App:** open the *Default domain*. The dashboard should look the same as locally. The mart tables must exist in Snowflake, so run the pipeline at least once first.
+- Logs: **Monitoring → Log stream** for both resources.
+
+### 9.6 Updating after code changes or to start it up again
+
+```bash
+docker compose build
+# re-tag and push as in 9.2
+```
+
+Then create a new revision of the Container App, or **Restart** the Web App.
+
+### 9.7 Troubleshooting
+
+| Error | Cause and fix |
+|-------|---------------|
+| `Env var required but not provided: 'DESTINATION__SNOWFLAKE__...'` (Dagster fails to load) | The variable is missing or misspelled in the Container App. Add it with the exact name and create a new revision |
+| A secret exists but the variable is missing | Create the environment variable and choose *Reference a secret* |
+| `ContainerTimeout ... probing port 80` (Web App) | `WEBSITES_PORT=8501` is missing or was not applied. Set it, **Apply** and **Restart**. Optionally set `WEBSITES_CONTAINER_START_TIME_LIMIT=600` |
+| `Object 'MART_...' does not exist or not authorized` (dashboard) | Wrong `SNOWFLAKE_DATABASE`/`SNOWFLAKE_SCHEMA`/role in Azure, the pipeline has not been run yet, or the role lacks `SELECT` on the mart schema. Compare with your local `.env` and check the grants in `worksheets_snowflake/` |
+| Container crashes or restarts | Increase CPU/memory |
+| Image cannot be pulled | *Admin user* not enabled on the registry, or wrong image name/tag |
+
+### 9.8 Security
+
+- Never commit `.env` and never bake secrets into images (`ENV`/`ARG` in a Dockerfile).
+- Use secrets for passwords in Azure, and rotate any password that has been exposed.
 
 ---
 

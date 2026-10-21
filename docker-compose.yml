@@ -1,5 +1,6 @@
 services:
   dwh_pipeline:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: dockerfile.dwh
@@ -8,9 +9,10 @@ services:
     env_file:
       - .env
     ##add
-    #image: azure_image_url
+    image: ${ACR_LOGIN_SERVER}/dwh_pipeline:latest
 
   dashboard:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: dockerfile.dashboard
@@ -18,5 +20,5 @@ services:
       - "8501:8501"
     env_file:
       - .env
-    ##add:
-    #image: azure_image_url
+    image: ${ACR_LOGIN_SERVER}/dashboard:latest
+

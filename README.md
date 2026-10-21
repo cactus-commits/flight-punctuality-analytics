@@ -175,11 +175,37 @@ Without Docker, dbt uses your own `~/.dbt/profiles.yml`.
 
 ### Using the dashboard
 
-1. Open http://localhost:8501.
-2. Use the filters (e.g. date, airport, airline) to explore delayed arrivals and departures.
-3. Compare airlines and airports to identify where delays are concentrated.
+The dashboard is a Streamlit app (`streamlit_app/app.py`) that reads the two marts, `mart_arrivals_info` and `mart_departures_info`, in Snowflake. The Snowflake credentials are read from `.env` (see `.env.example`).
 
-See [`streamlit_app/README.md`](streamlit_app/README.md) for what each chart shows and how the metrics are calculated.
+1. Start it with Docker (`docker compose up dashboard`) or without Docker (`uv run streamlit run streamlit_app/app.py` from the repo root).
+2. Open http://localhost:8501.
+3. Use the filters in the sidebar (date, direction, airport and airline) to explore delayed arrivals and departures.
+4. Compare airlines and airports to identify where delays are concentrated.
+
+#### What the dashboard shows
+
+- **Arrivals vs departures**: one box per direction. The number of delays comes first, with share delayed, number of flights and number of cancelled flights underneath.
+- **Delays by date**: one chart per direction. Orange bars are delayed flights (at the bottom), grey bars are flights that were not delayed. The percentage above each bar is the share delayed that day. Both charts use the same y-axis. Days that are not finished yet (more than 5% of their non-cancelled flights have no actual time) are faded and marked "(partial)".
+
+![Dashboard: arrivals vs departures and delays by date](docs/dashboard_image1.png)
+
+- **Delays by airport and airline**: rankings, airports first. The default is share delayed, because counts mainly show which airports and airlines have the most flights. The dashed line is the average share delayed for all flights in the current filter, so bars to its right are worse than normal. Airports and airlines with fewer than 5 measured flights per direction are left out of the share ranking.
+
+![Dashboard: delays by airline and airport](docs/dashboard_image2.png)
+
+- **Data**: an expandable table with the numbers behind the charts.
+
+The airport charts show the Swedish side of each flight: the arrival airport for arrivals and the departure airport for departures.
+
+#### Metrics
+
+- **Delay**: actual time minus scheduled time, in minutes. A flight that is 5 minutes early has a delay of -5.
+- **Delayed flight**: a flight that is 15 minutes or more late. Everything else that has an actual time counts as on time.
+- **Share delayed**: delayed flights divided by flights that have an actual time. Flights that have not landed or departed yet, and cancelled flights, are left out of the share but still count in the flight total.
+- **Cancelled**: flights with status Cancelled. They are shown as a number and never counted as delayed or on time.
+- **Avg delay** (in the data table): the average delay of measured flights. It can be negative or close to zero because early flights pull the average down, so use share delayed to judge punctuality.
+
+Known data limitations (such as flights shown as `Unknown`) are listed in [section 10](#10-known-limitations-and-future-work).
 
 ---
 
